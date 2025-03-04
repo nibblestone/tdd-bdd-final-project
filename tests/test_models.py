@@ -115,6 +115,23 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found_product.available, product.available)
         self.assertEqual(found_product.category, product.category)
 
+    def test_update_a_product(self):
+        """It should Update a product"""
+        product = ProductFactory()
+        product.id = None
+        product.create()
+        self.assertIsNotNone(product.id)
+        id_before_update = product.id
+        updated_description = "updated"
+        product.description = updated_description
+        product.update()
+        self.assertEqual(product.id, id_before_update)
+        self.assertEqual(product.description, updated_description)
+        products = Product.all()
+        self.assertEqual(len(products), 1)
+        self.assertEqual(products[0].id, id_before_update)
+        self.assertEqual(products[0].description, updated_description)
+
     #
     # ADD YOUR TEST CASES HERE
     #
