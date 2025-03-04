@@ -163,9 +163,24 @@ class TestProductRoutes(TestCase):
         response = self.client.post(BASE_URL, data={}, content_type="plain/text")
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    #
-    # ADD YOUR TEST CASES HERE
-    #
+    # ----------------------------------------------------------
+    # TEST GET
+    # ----------------------------------------------------------
+    def test_get_non_existing_product(self):
+        """It should not Get a non-existing product"""
+        non_existing_product_id = 0
+        response = self.client.get(f"{BASE_URL}/{non_existing_product_id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("was not found", data["message"])
+
+    def test_get_product(self):
+        """It should Get a product"""
+        product = self._create_products()[0]
+        response = self.client.get(f"{BASE_URL}/{product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["name"], product.name)
 
     ######################################################################
     # Utility functions
