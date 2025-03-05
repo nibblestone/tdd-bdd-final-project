@@ -262,6 +262,30 @@ class TestProductRoutes(TestCase):
         for product in data:
             self.assertEqual(product["name"], name)
 
+    # ----------------------------------------------------------
+    # TEST LIST BY CATEGORY
+    # ----------------------------------------------------------
+    def test_query_by_non_existing_category(self):
+        """It should get empty list if querying for non-existing category"""
+        self._create_products(5)
+        query = f"category={quote_plus('non-existing category')}"
+        response = self.client.get(BASE_URL, query_string=query)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 0)
+
+    def test_query_by_category(self):
+        """It should Query products by category"""
+        products = self._create_products(5)
+        category = products[0].category
+        count = sum(1 for p in products if p.category == category)
+        query = f"category={quote_plus(category.name)}"
+        response = self.client.get(BASE_URL, query_string=query)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), count)
+        for product in data:
+            self.assertEqual(product["category"], category.name)
+
     ######################################################################
     # Utility functions
     ######################################################################

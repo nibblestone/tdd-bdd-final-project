@@ -20,7 +20,7 @@ Product Store Service with UI
 """
 from flask import jsonify, request, abort
 from flask import url_for  # noqa: F401 pylint: disable=unused-import
-from service.models import Product
+from service.models import Product, Category
 from service.common import status  # HTTP Status Codes
 from . import app
 
@@ -104,8 +104,23 @@ def get_products():
     This endpoint will return a list of products
     """
     app.logger.info("Request to list Products...")
-    query = request.args.get('name')
-    products = Product.find_by_name(query) if query else Product.all()
+    name = request.args.get("name")
+    category = request.args.get("category")
+    products = []
+    if name:
+        app.logger.info("Find by name '%s'.", name)
+        products = Product.find_by_name(name)
+    elif category:
+        app.logger.info("Find by category '%s'.", category)
+        try:
+            category_value = Category[category.upper()]
+        except:
+            app.logger.info("Invalid category '%s'.", category)
+            return [], status.HTTP_200_OK
+        products = Product.find_by_category(category_value)
+    else:
+        app.logger.info("Find all.")
+        products = Product.all()
     result = [p.serialize() for p in products]
     app.logger.info("%s products found.", len(result))
     return result, status.HTTP_200_OK
