@@ -286,6 +286,28 @@ class TestProductRoutes(TestCase):
         for product in data:
             self.assertEqual(product["category"], category.name)
 
+    # ----------------------------------------------------------
+    # TEST LIST BY AVAILABILITY
+    # ----------------------------------------------------------
+    def test_query_by_invalid_availability(self):
+        """It should get empty list if querying with invalid availability"""
+        self._create_products(5)
+        query = f"available={quote_plus('invalid value')}"
+        response = self.client.get(BASE_URL, query_string=query)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 0)
+
+    def test_query_by_availability(self):
+        """It should Query products by availability"""
+        products = self._create_products(5)
+        count = sum(1 for p in products if p.available)
+        response = self.client.get(BASE_URL, query_string="available=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), count)
+        for product in data:
+            self.assertTrue(product["available"])
+
     ######################################################################
     # Utility functions
     ######################################################################

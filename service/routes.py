@@ -106,7 +106,9 @@ def get_products():
     app.logger.info("Request to list Products...")
     name = request.args.get("name")
     category = request.args.get("category")
+    availability = request.args.get("available")
     products = []
+    # note: If multiple queries are combined only one of them will have an affect.
     if name:
         app.logger.info("Find by name '%s'.", name)
         products = Product.find_by_name(name)
@@ -118,6 +120,14 @@ def get_products():
             app.logger.info("Invalid category '%s'.", category)
             return [], status.HTTP_200_OK
         products = Product.find_by_category(category_value)
+    elif availability:
+        app.logger.info("Find by availability '%s'.", availability)
+        is_true = availability.lower() in ['true', 'yes', '1']
+        is_false = availability.lower() in ['false', 'no', '0']
+        if not is_true and not is_false:
+            app.logger.info("Invalid availability '%s'.", availability)
+            return [], status.HTTP_200_OK
+        products = Product.find_by_availability(is_true)
     else:
         app.logger.info("Find all.")
         products = Product.all()
