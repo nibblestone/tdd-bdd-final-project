@@ -28,6 +28,7 @@ import os
 import logging
 from decimal import Decimal
 from unittest import TestCase
+from urllib.parse import quote_plus
 from service import app
 from service.common import status
 from service.models import db, init_db, Product
@@ -236,6 +237,30 @@ class TestProductRoutes(TestCase):
         response = self.client.get(BASE_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.get_json()), count)
+
+    # ----------------------------------------------------------
+    # TEST LIST BY NAME
+    # ----------------------------------------------------------
+    def test_query_by_non_existing_name(self):
+        """It should get empty list if querying for non-existing name"""
+        self._create_products(5)
+        query = f"name={quote_plus('non-existing name')}"
+        response = self.client.get(BASE_URL, query_string=query)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 0)
+
+    def test_query_by_name(self):
+        """It should Query products by name"""
+        products = self._create_products(5)
+        name = products[0].name
+        count = sum(1 for p in products if p.name == name)
+        query = f"name={quote_plus(name)}"
+        response = self.client.get(BASE_URL, query_string=query)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), count)
+        for product in data:
+            self.assertEqual(product["name"], name)
 
     ######################################################################
     # Utility functions
