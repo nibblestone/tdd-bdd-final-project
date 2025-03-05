@@ -97,6 +97,32 @@ def create_products():
 ######################################################################
 # L I S T   A L L   P R O D U C T S
 ######################################################################
+def find_products_by_category(category):
+    """
+    Find products by category
+    No products are found if category is has an invalid value.
+    """
+    try:
+        category_value = Category[category.upper()]
+    except KeyError:
+        app.logger.info("Invalid category '%s'.", category)
+        category_value = None
+    return Product.find_by_category(category_value) if category_value else []
+
+
+def find_products_by_availability(availability):
+    """
+    Find products by availability
+    No products are found if availability is has an invalid value.
+    """
+    is_true = availability.lower() in ["true", "yes", "1"]
+    is_false = availability.lower() in ["false", "no", "0"]
+    valid_availability = is_true ^ is_false
+    if not valid_availability:
+        app.logger.info("Invalid availability '%s'.", availability)
+    return Product.find_by_availability(is_true) if valid_availability else []
+
+
 @app.route("/products", methods=["GET"])
 def get_products():
     """
@@ -114,26 +140,17 @@ def get_products():
         products = Product.find_by_name(name)
     elif category:
         app.logger.info("Find by category '%s'.", category)
-        try:
-            category_value = Category[category.upper()]
-        except:
-            app.logger.info("Invalid category '%s'.", category)
-            return [], status.HTTP_200_OK
-        products = Product.find_by_category(category_value)
+        products = find_products_by_category(category)
     elif availability:
         app.logger.info("Find by availability '%s'.", availability)
-        is_true = availability.lower() in ['true', 'yes', '1']
-        is_false = availability.lower() in ['false', 'no', '0']
-        if not is_true and not is_false:
-            app.logger.info("Invalid availability '%s'.", availability)
-            return [], status.HTTP_200_OK
-        products = Product.find_by_availability(is_true)
+        products = find_products_by_availability(availability)
     else:
         app.logger.info("Find all.")
         products = Product.all()
     result = [p.serialize() for p in products]
     app.logger.info("%s products found.", len(result))
     return result, status.HTTP_200_OK
+
 
 ######################################################################
 # R E A D   A   P R O D U C T
