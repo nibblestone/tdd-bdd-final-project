@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -132,6 +132,14 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(products[0].id, id_before_update)
         self.assertEqual(products[0].description, updated_description)
 
+    def test_update_product_without_id(self):
+        """It should raise an exception if updated without ID"""
+        product = ProductFactory()
+        product.id = None
+        self.assertRaisesRegex(
+            DataValidationError, "called with empty ID", product.update
+        )
+
     def test_delete_a_product(self):
         """It should Delete a product"""
         product = ProductFactory()
@@ -157,7 +165,7 @@ class TestProductModel(unittest.TestCase):
         for product in products:
             product.create()
         name = products[0].name
-        expected_count = sum(1 for product in products if product.name == name)
+        expected_count = sum(1 for p in products if p.name == name)
         found_products = Product.find_by_name(name)
         self.assertEqual(found_products.count(), expected_count)
         for product in found_products:
@@ -169,9 +177,7 @@ class TestProductModel(unittest.TestCase):
         for product in products:
             product.create()
         available = products[0].available
-        expected_count = sum(
-            1 for product in products if product.available == available
-        )
+        expected_count = sum(1 for p in products if p.available == available)
         found_products = Product.find_by_availability(available)
         self.assertEqual(found_products.count(), expected_count)
         for product in found_products:
@@ -183,12 +189,50 @@ class TestProductModel(unittest.TestCase):
         for product in products:
             product.create()
         category = products[0].category
-        expected_count = sum(1 for product in products if product.category == category)
+        expected_count = sum(1 for p in products if p.category == category)
         found_products = Product.find_by_category(category)
         self.assertEqual(found_products.count(), expected_count)
         for product in found_products:
             self.assertEqual(product.category, category)
 
-    #
-    # ADD YOUR TEST CASES HERE
-    #
+    def test_find_products_by_price(self):
+        """It should Find products by price"""
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+        price = products[0].price
+        expected_count = sum(1 for p in products if p.price == price)
+        found_products = Product.find_by_price(str(price))
+        self.assertEqual(found_products.count(), expected_count)
+        for product in found_products:
+            self.assertEqual(product.price, price)
+
+    def test_deserialize_with_invalid_availability(self):
+        """It should raise an exception if deserialized with non-bool availability"""
+        product = ProductFactory()
+        data = product.serialize()
+        data["available"] = "not a bool"
+        self.assertRaisesRegex(
+            DataValidationError, "Invalid type for boolean", product.deserialize, data
+        )
+
+    def test_deserialize_with_invalid_category(self):
+        """It should raise an exception if deserialized with non-existing category"""
+        product = ProductFactory()
+        data = product.serialize()
+        data["category"] = "not a category"
+        self.assertRaisesRegex(
+            DataValidationError, "Invalid attribute", product.deserialize, data
+        )
+
+    def test_deserialize_with_invalid_category_type(self):
+        """It should raise an exception if deserialized when category is not a string"""
+        product = ProductFactory()
+        data = product.serialize()
+        data["category"] = None  # not a string
+        self.assertRaisesRegex(
+            DataValidationError,
+            "Invalid product: body of request contained bad or no data",
+            product.deserialize,
+            data,
+        )
